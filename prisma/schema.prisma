@@ -1,0 +1,56 @@
+generator client {
+  provider      = "prisma-client-js"
+  binaryTargets = ["native", "linux-musl-openssl-3.0.x"]
+  output        = "../node_modules/.prisma/client"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String    @id @default(uuid()) @db.VarChar(36)
+  email     String    @unique @db.VarChar(64)
+  username  String    @unique @map("username") @db.VarChar(32)
+  password  String    @db.VarChar(255)
+  updatedAt DateTime  @default(now()) @updatedAt @map("updated_at")
+  createdAt DateTime  @default(now()) @map("created_at")
+  sessions  Session[]
+
+  roles UserRole[]
+
+  @@map("users")
+}
+
+model Session {
+  sid       String   @id @db.VarChar(36)
+  gid       String   @db.VarChar(36)
+  sub       String   @db.VarChar(36)
+  updatedAt DateTime @default(now()) @updatedAt @map("updated_at")
+  createdAt DateTime @default(now()) @map("created_at")
+  subject   User     @relation(fields: [sub], references: [id], onDelete: Cascade)
+
+  @@map("sessions")
+}
+
+model Role {
+  id        Int      @id
+  name      String   @db.VarChar(64)
+  updatedAt DateTime @default(now()) @updatedAt @map("updated_at")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  users UserRole[]
+
+  @@map("roles")
+}
+
+model UserRole {
+  userId String @map("user_id") @db.VarChar(36)
+  roleId Int    @map("role_id")
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role   Role   @relation(fields: [roleId], references: [id], onDelete: Cascade)
+
+  @@id([userId, roleId])
+  @@map("user_roles")
+}

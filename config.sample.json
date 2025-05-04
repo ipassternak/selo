@@ -1,0 +1,52 @@
+{
+  "server": {
+    "port": "${PORT:-8080}",
+    "trustProxy": false,
+    "logLevel": "info",
+    "shutdownTimeout": 5000,
+    "cors": {
+      "origin": "http://localhost:3000",
+      "methods": ["GET", "HEAD", "PUT", "PATCH", "POST", "DELETE", "OPTIONS"],
+      "credentials": true
+    },
+    "swagger": {
+      "enabled": false,
+      "title": "Swagger UI",
+      "description": "",
+      "version": "1.0",
+      "path": "/docs"
+    }
+  },
+  "auth": {
+    "jwt": {
+      "secret": "MINIMUM_THIRTY_TWO_SYMBOLIC_SECRET",
+      "accessTtlSec": 3600,
+      "refreshTtlSec": 604800
+    },
+    "oauth": {
+      "google": {
+        "clientId": "GOOGLE_CLIENT_ID",
+        "clientSecret": "GOOGLE_CLIENT_SECRET",
+        "redirectUri": "http://localhost:${PORT:-8080}/api/auth/oauth/google/callback"
+      },
+      "github": {
+        "clientId": "GITHUB_CLIENT_ID",
+        "clientSecret": "GITHUB_CLIENT_SECRET",
+        "redirectUri": "http://localhost:${PORT:-8080}/api/auth/oauth/github/callback"
+      },
+      "successRedirectUri": "http://localhost:3000/auth/success",
+      "errorRedirectUri": "http://localhost:3000/auth/error"
+    },
+    "activeSessionsLimit": 5
+  },
+  "database": {
+    "url": "${DATABASE_URL:-postgresql://root:toor@localhost:5432/db}"
+  },
+  "scheduler": {
+    "authCleanupSessions": "0 0 * * *"
+  },
+  "redis": {
+    "host": "localhost",
+    "port": 6379
+  }
+}

@@ -1,0 +1,7 @@
+# Core
+node_modules/
+dist/
+
+# Config
+.env
+config.json
