@@ -42,3 +42,8 @@ export abstract class ListResponseDto<T> extends ResponseDto {
   @ApiProperty({ type: ListResponseMetaDto })
   meta: ListResponseMetaDto;
 }
+
+export class SuccessResponseDto extends ResponseDto {
+  @ApiProperty({ description: 'Success status' })
+  success: boolean;
+}

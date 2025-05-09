@@ -25,6 +25,7 @@ import {
 import { Profile as OAuthGithubProfile } from 'passport-github2';
 import { Profile as OAuthGoogleProfile } from 'passport-google-oauth20';
 
+import { AccessPayload } from '@lib/decorators/access-payload';
 import { AuthAccessPayload, AuthRefreshPayload } from '@lib/types/auth';
 import { UserResponseDto } from '@src/user/dto/user.dto';
 
@@ -64,9 +65,8 @@ export class AuthController {
   @ApiOperation({ description: 'Get active session subject' })
   @ApiOkResponse({ type: UserResponseDto })
   async me(
-    @Req() request: { accessPayload: AuthAccessPayload },
+    @AccessPayload() accessPayload: AuthAccessPayload,
   ): Promise<UserResponseDto> {
-    const { accessPayload } = request;
     return await this.authService.me(accessPayload);
   }
 

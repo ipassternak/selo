@@ -12,11 +12,14 @@ import { RequestIdMiddleware } from '@lib/middlewars/request-id.middleware';
 import { loadConfig } from '@lib/utils/config';
 import { AppConfigDto } from 'config/app.dto';
 
+import { ApiModule } from './api/api.module';
 import { AuthModule } from './auth/auth.module';
 import { DatabaseModule } from './database/database.module';
+import { GameVersionModule } from './game-version/game-version.module';
 import { HealthModule } from './health/health.module';
 // import { RedisModule } from './redis/redis.module';
 import { SchedulerModule } from './scheduler/scheduler.module';
+import { TagModule } from './tag/tag.module';
 import { UserModule } from './user/user.module';
 
 @Module({
@@ -49,6 +52,10 @@ import { UserModule } from './user/user.module';
     AuthModule,
     // RedisModule,
     UserModule,
+    ApiModule.forRoot(),
+    // -- Domain modules --
+    TagModule,
+    GameVersionModule,
   ],
   controllers: [],
   providers: [],

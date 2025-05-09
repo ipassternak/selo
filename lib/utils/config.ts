@@ -17,7 +17,7 @@ const readConfig = (configPath: string): string => {
   try {
     return fs.readFileSync(configPath, 'utf8');
   } catch {
-    throw new ConfigError(`${configPath} file not found`);
+    throw new ConfigError(`${configPath} file does not exist`);
   }
 };
 

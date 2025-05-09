@@ -54,3 +54,38 @@ model UserRole {
   @@id([userId, roleId])
   @@map("user_roles")
 }
+
+model GameVersion {
+  id         String   @id @default(uuid()) @db.VarChar(36)
+  versionId  String   @unique @map("version_id") @db.VarChar(32)
+  packageUrl String   @map("package_url") @db.VarChar(255)
+  releasedAt DateTime @map("released_at")
+  syncedAt   DateTime @map("synced_at")
+  updatedAt  DateTime @default(now()) @updatedAt @map("updated_at")
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  tags GameVersionTag[]
+
+  @@map("game_versions")
+}
+
+model Tag {
+  id        String   @id @default(uuid()) @db.VarChar(36)
+  name      String   @unique @db.VarChar(32)
+  updatedAt DateTime @default(now()) @updatedAt @map("updated_at")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  gameVersions GameVersionTag[]
+
+  @@map("tags")
+}
+
+model GameVersionTag {
+  gameVersionId String      @default(uuid()) @map("game_version_id") @db.VarChar(36)
+  tagId         String      @default(uuid()) @map("tag_id") @db.VarChar(36)
+  gameVersion   GameVersion @relation(fields: [gameVersionId], references: [id], onDelete: Cascade)
+  tag           Tag         @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@id([gameVersionId, tagId])
+  @@map("game_version_tags")
+}

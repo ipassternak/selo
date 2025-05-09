@@ -134,6 +134,9 @@ export default tseslint.config(
       ],
       camelcase: [
         'error',
+        {
+          properties: 'never',
+        },
       ],
       'brace-style': [
         'error',
