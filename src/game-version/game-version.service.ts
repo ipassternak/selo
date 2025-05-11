@@ -4,7 +4,6 @@ import { Prisma, Tag } from '@prisma/client';
 import { SuccessResponseDto } from '@lib/dto/lib.dto';
 import { GameVersionParseSourceType } from '@lib/types/game-version';
 import { AppException, createAppException } from '@lib/utils/exception';
-import { memoize } from '@lib/utils/memoize';
 import { ApiService } from '@src/api/api.service';
 import { PrismaService } from '@src/database/prisma.service';
 import { TagConfig } from '@src/tag/tag.config';
@@ -40,8 +39,15 @@ export class GameVersionService {
   async list(
     params: ListGameVersionParamsDto,
   ): Promise<GameVersionListResponseDto> {
-    const { page, pageSize, sortColumn, sortOrder, tagNames, versionId } =
-      params;
+    const {
+      page,
+      pageSize,
+      sortColumn,
+      sortOrder,
+      tagNames,
+      versionId,
+      versionType,
+    } = params;
 
     const where: Prisma.GameVersionWhereInput = {
       ...(tagNames
@@ -61,6 +67,7 @@ export class GameVersionService {
         contains: versionId,
         mode: 'insensitive',
       },
+      versionType,
     };
 
     const [data, total] = await Promise.all([
@@ -130,7 +137,13 @@ export class GameVersionService {
   async create(
     data: CreateGameVersionDataDto,
   ): Promise<GameVersionResponseDto> {
-    const { versionId, packageUrl, releasedAt, tags: tagsData } = data;
+    const {
+      versionId,
+      versionType,
+      packageUrl,
+      releasedAt,
+      tags: tagsData,
+    } = data;
 
     await this.checkUniqueVersionId(versionId);
 
@@ -139,9 +152,9 @@ export class GameVersionService {
     const gameVersion = await this.prismaService.gameVersion.create({
       data: {
         versionId,
+        versionType,
         packageUrl,
         releasedAt,
-        syncedAt: releasedAt,
         tags: {
           create: tags.map((tag) => ({
             tagId: tag.id,
@@ -243,7 +256,7 @@ export class GameVersionService {
   async parse(data: ParseGameVersionDataDto): Promise<SuccessResponseDto> {
     const { tags: tagsData, source } = data;
 
-    let tags: Tag[] = [];
+    let tags: Tag[] | null = null;
     if (tagsData) {
       tags = await this.tagService.getOrCreateTags(tagsData);
     }
@@ -277,50 +290,29 @@ export class GameVersionService {
       },
     });
 
-    const getOrCreateTags = memoize(async (name: string) => {
-      const [tag] = await this.tagService.getOrCreateTags([
-        {
-          name,
-        },
-      ]);
-
-      return tag;
-    });
-
     for (const version of manifest.versions) {
-      const tagsToUse = [...tags];
-
-      if (tagsToUse.length < TagConfig.limit) {
-        const tag = await getOrCreateTags(version.type);
-
-        tagsToUse.push(tag);
-      }
-
       await this.prismaService.gameVersion.upsert({
         where: {
           versionId: version.id,
         },
         create: {
           versionId: version.id,
+          versionType: version.type,
           packageUrl: version.url,
-          releasedAt: new Date(version.releaseTime),
-          syncedAt: new Date(version.time),
-          tags: {
-            create: tags.map((tag) => ({
-              tagId: tag.id,
-            })),
-          },
+          releasedAt: version.releaseTime,
+          ...(tags
+            ? {
+                tags: {
+                  create: tags.map((tag) => ({
+                    tagId: tag.id,
+                  })),
+                },
+              }
+            : {}),
         },
         update: {
           packageUrl: version.url,
           releasedAt: version.releaseTime,
-          syncedAt: version.time,
-          tags: {
-            deleteMany: {},
-            create: tagsToUse.map((tag) => ({
-              tagId: tag.id,
-            })),
-          },
         },
       });
     }

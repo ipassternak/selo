@@ -56,13 +56,13 @@ model UserRole {
 }
 
 model GameVersion {
-  id         String   @id @default(uuid()) @db.VarChar(36)
-  versionId  String   @unique @map("version_id") @db.VarChar(32)
-  packageUrl String   @map("package_url") @db.VarChar(255)
-  releasedAt DateTime @map("released_at")
-  syncedAt   DateTime @map("synced_at")
-  updatedAt  DateTime @default(now()) @updatedAt @map("updated_at")
-  createdAt  DateTime @default(now()) @map("created_at")
+  id          String   @id @default(uuid()) @db.VarChar(36)
+  versionId   String   @unique @map("version_id") @db.VarChar(32)
+  versionType String   @map("version_type") @db.VarChar(32)
+  packageUrl  String   @map("package_url") @db.VarChar(255)
+  releasedAt  DateTime @map("released_at")
+  updatedAt   DateTime @default(now()) @updatedAt @map("updated_at")
+  createdAt   DateTime @default(now()) @map("created_at")
 
   tags GameVersionTag[]
 

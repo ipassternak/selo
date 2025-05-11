@@ -21,6 +21,7 @@ import {
   GameVersionParseSourceType,
   GameVersionParseType,
   GameVersionSortColumn,
+  GameVersionType,
 } from '@lib/types/game-version';
 import { GetOrCreateTagDataDto, TagsResponseDto } from '@src/tag/dto/tag.dto';
 import { TagConfig } from '@src/tag/tag.config';
@@ -49,6 +50,15 @@ export class ListGameVersionParamsDto extends PageableDto {
   @IsString()
   @MinLength(3)
   versionId?: string;
+
+  @ApiProperty({
+    enum: GameVersionType,
+    description: 'Version type',
+    required: false,
+  })
+  @IsOptional()
+  @IsEnum(GameVersionType)
+  versionType?: GameVersionType;
 }
 
 export class CreateGameVersionDataDto {
@@ -56,6 +66,10 @@ export class CreateGameVersionDataDto {
   @IsString()
   @Length(1, 32)
   versionId: string;
+
+  @ApiProperty({ enum: GameVersionParseType, description: 'Version type' })
+  @IsEnum(GameVersionParseType)
+  versionType: GameVersionParseType;
 
   @ApiProperty({ description: 'Version package url' })
   @IsString()
@@ -136,7 +150,11 @@ export class ParseGameVersionDataDto {
   type: GameVersionParseType;
 
   @IsOptional()
-  @ApiProperty({ type: [GetOrCreateTagDataDto], required: false })
+  @ApiProperty({
+    type: [GetOrCreateTagDataDto],
+    required: false,
+    description: 'Tags to apply to new versions',
+  })
   @IsArray()
   @ArrayMaxSize(8)
   @ValidateNested({ each: true })
@@ -162,9 +180,6 @@ export class GameVersionResponseDto extends ResponseDto {
 
   @ApiProperty({ description: 'Release date' })
   releasedAt: Date;
-
-  @Exclude()
-  syncedAt: Date;
 
   @ApiProperty({ description: 'Create date' })
   createdAt: Date;

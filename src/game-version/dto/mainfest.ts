@@ -4,6 +4,7 @@ import {
   ArrayMaxSize,
   IsArray,
   IsDate,
+  IsEnum,
   IsString,
   Length,
   ValidateNested,
@@ -13,6 +14,7 @@ import {
   GameVersionManifest,
   GameVersionManifestItem,
   GameVersionManifestLatest,
+  GameVersionType,
 } from '@lib/types/game-version';
 
 class GameVersionManifestItemDto implements GameVersionManifestItem {
@@ -20,9 +22,8 @@ class GameVersionManifestItemDto implements GameVersionManifestItem {
   @Length(1, 32)
   id: string;
 
-  @IsString()
-  @Length(1, 32)
-  type: string;
+  @IsEnum(GameVersionType)
+  type: GameVersionType;
 
   @IsString()
   @Length(1, 255)

@@ -5,6 +5,13 @@ export enum GameVersionSortColumn {
   UpdatedAt = 'updatedAt',
 }
 
+export enum GameVersionType {
+  Release = 'release',
+  Snapshot = 'snapshot',
+  OldAlpha = 'old_alpha',
+  OldBeta = 'old_beta',
+}
+
 export enum GameVersionParseType {
   Manifest = 'manifest',
 }
@@ -21,7 +28,7 @@ export interface GameVersionManifestLatest {
 
 export interface GameVersionManifestItem {
   id: string;
-  type: string;
+  type: GameVersionType;
   url: string;
   time: Date;
   releaseTime: Date;
