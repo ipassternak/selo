@@ -1,5 +1,6 @@
 import { Type } from 'class-transformer';
 import {
+  IsBoolean,
   IsInt,
   IsNotEmpty,
   IsNotEmptyObject,
@@ -23,6 +24,9 @@ export class JwtConfigDto {
 }
 
 export class OAuthGoogleConfigDto {
+  @IsBoolean()
+  enabled = false;
+
   @IsString()
   @IsNotEmpty()
   clientId: string;
@@ -37,6 +41,9 @@ export class OAuthGoogleConfigDto {
 }
 
 export class OAuthGithubConfigDto {
+  @IsBoolean()
+  enabled = false;
+
   @IsString()
   @IsNotEmpty()
   clientId: string;

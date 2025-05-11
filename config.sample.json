@@ -10,7 +10,7 @@
       "credentials": true
     },
     "swagger": {
-      "enabled": false,
+      "enabled": true,
       "title": "Swagger UI",
       "description": "",
       "version": "1.0",
@@ -25,11 +25,13 @@
     },
     "oauth": {
       "google": {
+        "enabled": false,
         "clientId": "GOOGLE_CLIENT_ID",
         "clientSecret": "GOOGLE_CLIENT_SECRET",
         "redirectUri": "http://localhost:${PORT:-8080}/api/auth/oauth/google/callback"
       },
       "github": {
+        "enabled": false,
         "clientId": "GITHUB_CLIENT_ID",
         "clientSecret": "GITHUB_CLIENT_SECRET",
         "redirectUri": "http://localhost:${PORT:-8080}/api/auth/oauth/github/callback"
