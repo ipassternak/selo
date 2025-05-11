@@ -14,6 +14,8 @@ import {
   ApiTags,
 } from '@nestjs/swagger';
 
+import { Roles } from '@lib/guards/roles.guard';
+import { RoleId } from '@lib/types/user';
 import { JwtAccessGuard } from '@src/auth/guards/jwt-access.guard';
 
 import { UserResponseDto } from './dto/user.dto';
@@ -27,6 +29,9 @@ import { UserService } from './user.service';
 export class UserController {
   constructor(private readonly userService: UserService) {}
 
+  @Roles({
+    roleIds: [RoleId.Admin],
+  })
   @Get('/:id')
   @ApiOperation({ description: 'Get user by id' })
   @SerializeOptions({ type: UserResponseDto })

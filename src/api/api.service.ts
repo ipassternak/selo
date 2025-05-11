@@ -1,8 +1,6 @@
-import { HttpStatus, Inject, Injectable, Type } from '@nestjs/common';
-import { plainToInstance } from 'class-transformer';
-import { validate } from 'class-validator';
+import { Inject, Injectable, Type } from '@nestjs/common';
 
-import { AppException } from '@lib/utils/exception';
+import { validateOrThrow } from '@lib/utils/validate';
 
 import { GenericCacheStorage } from './cache-storage/generic.storage';
 
@@ -78,28 +76,7 @@ export class ApiService {
       .json()
       .then((res: ResponseType) => res);
 
-    if (Dto) {
-      const dto = plainToInstance(Dto, response, {
-        exposeDefaultValues: true,
-        enableImplicitConversion: true,
-      });
-
-      const errors = await validate(dto, {
-        whitelist: true,
-        stopAtFirstError: true,
-        skipMissingProperties: false,
-      });
-
-      if (errors.length > 0)
-        throw new AppException(
-          'Invalid external service response',
-          HttpStatus.SERVICE_UNAVAILABLE,
-          null,
-          errors,
-        );
-
-      response = dto;
-    }
+    if (Dto) response = await validateOrThrow(Dto, response);
 
     if (cache) {
       const cacheKey = cache.cacheKey

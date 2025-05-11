@@ -10,6 +10,6 @@ import { GameVersionService } from './game-version.service';
   imports: [TagModule, ApiModule],
   controllers: [GameVersionController],
   providers: [GameVersionService],
-  exports: [],
+  exports: [GameVersionService],
 })
 export class GameVersionModule {}

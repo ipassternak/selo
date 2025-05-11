@@ -38,6 +38,7 @@ export default tseslint.config(
   },
   {
     rules: {
+      '@typescript-eslint/no-misused-spread': ['off'],
       '@typescript-eslint/no-extraneous-class': [
         'error',
         {

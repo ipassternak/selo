@@ -26,6 +26,7 @@ services:
       
   app:
     container_name: selo-app
+    platform: linux/amd64
     volumes:
       - "$ROOT:/app:delegated"
     build:

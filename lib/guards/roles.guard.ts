@@ -96,7 +96,7 @@ export class RolesGuard implements CanActivate {
   }
 }
 
-export const Roles = (options: Options): MethodDecorator =>
+export const Roles = (options: Options): MethodDecorator & ClassDecorator =>
   applyDecorators(
     SetMetadata(ROLES_OPTIONS_META_KEY, options),
     UseGuards(RolesGuard),
