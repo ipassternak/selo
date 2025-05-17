@@ -77,6 +77,9 @@ export default tseslint.config(
       '@typescript-eslint/restrict-template-expressions': [
         'off',
       ],
+      '@typescript-eslint/no-inferrable-types': ['error', {
+        ignoreProperties: true,
+      }],
       'import/order': [
         'error',
         {

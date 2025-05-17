@@ -6,13 +6,13 @@ export abstract class PageableDto {
   @ApiProperty({ description: 'Page number', minimum: 1, default: 1 })
   @IsInt()
   @IsPositive()
-  page: number;
+  page: number = 1;
 
   @ApiProperty({ description: 'Page size', default: 10, maximum: 100 })
   @IsInt()
   @IsPositive()
   @Max(100)
-  pageSize: number;
+  pageSize: number = 10;
 
   abstract sortColumn: unknown;
 
@@ -22,7 +22,7 @@ export abstract class PageableDto {
     default: Prisma.SortOrder.asc,
   })
   @IsEnum(Prisma.SortOrder)
-  sortOrder: Prisma.SortOrder;
+  sortOrder = Prisma.SortOrder.asc;
 }
 
 export class ResponseDto {
