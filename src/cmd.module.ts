@@ -1,15 +1,12 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
-import { ScheduleModule } from '@nestjs/schedule';
 import { LoggerModule } from 'nestjs-pino';
 
 import { loadConfig } from '@lib/utils/config';
 import { AppConfigDto } from 'config/app.dto';
 
 import { CreateAdminCommand } from './cmd/create-admin.cmd';
-import { EnableTaskCommand } from './cmd/enable-task.cmd';
 import { DatabaseModule } from './database/database.module';
-import { SchedulerService } from './scheduler/scheduler.service';
 
 @Module({
   imports: [
@@ -25,10 +22,9 @@ import { SchedulerService } from './scheduler/scheduler.service';
         },
       },
     }),
-    ScheduleModule.forRoot(),
     DatabaseModule,
   ],
   controllers: [],
-  providers: [CreateAdminCommand, EnableTaskCommand, SchedulerService],
+  providers: [CreateAdminCommand],
 })
 export class CmdModule {}

@@ -15,6 +15,7 @@ import { AppConfigDto } from 'config/app.dto';
 import { ApiModule } from './api/api.module';
 import { AuthModule } from './auth/auth.module';
 import { DatabaseModule } from './database/database.module';
+import { GameForgeModule } from './game-forge/game-forge.module';
 import { GameVersionModule } from './game-version/game-version.module';
 import { HealthModule } from './health/health.module';
 // import { RedisModule } from './redis/redis.module';
@@ -56,6 +57,7 @@ import { UserModule } from './user/user.module';
     // -- Domain modules --
     TagModule,
     GameVersionModule,
+    GameForgeModule,
   ],
   controllers: [],
   providers: [],
