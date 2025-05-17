@@ -76,7 +76,8 @@ model GameVersion {
   updatedAt   DateTime @default(now()) @updatedAt @map("updated_at")
   createdAt   DateTime @default(now()) @map("created_at")
 
-  tags GameVersionTag[]
+  tags       GameVersionTag[]
+  gameForges GameForge[]
 
   @@map("game_versions")
 }
@@ -88,16 +89,42 @@ model Tag {
   createdAt DateTime @default(now()) @map("created_at")
 
   gameVersions GameVersionTag[]
+  gameForges   GameForgeTag[]
 
   @@map("tags")
 }
 
 model GameVersionTag {
-  gameVersionId String      @default(uuid()) @map("game_version_id") @db.VarChar(36)
-  tagId         String      @default(uuid()) @map("tag_id") @db.VarChar(36)
+  gameVersionId String      @map("game_version_id") @db.VarChar(36)
+  tagId         String      @map("tag_id") @db.VarChar(36)
   gameVersion   GameVersion @relation(fields: [gameVersionId], references: [id], onDelete: Cascade)
   tag           Tag         @relation(fields: [tagId], references: [id], onDelete: Cascade)
 
   @@id([gameVersionId, tagId])
   @@map("game_version_tags")
+}
+
+model GameForge {
+  id            String      @id @default(uuid()) @db.VarChar(36)
+  versionId     String      @unique @map("version_id") @db.VarChar(32)
+  gameVersionId String      @map("game_version_id") @db.VarChar(36)
+  gameVersion   GameVersion @relation(fields: [gameVersionId], references: [id], onDelete: Cascade)
+  packageUrl    String      @map("package_url") @db.VarChar(255)
+  updatedAt     DateTime    @default(now()) @updatedAt @map("updated_at")
+  createdAt     DateTime    @default(now()) @map("created_at")
+
+  tags GameForgeTag[]
+
+  @@index([gameVersionId], name: "game_forge_game_version_id_idx")
+  @@map("game_forges")
+}
+
+model GameForgeTag {
+  gameForgeId String    @map("game_forge_id") @db.VarChar(36)
+  tagId       String    @map("tag_id") @db.VarChar(36)
+  gameForge   GameForge @relation(fields: [gameForgeId], references: [id], onDelete: Cascade)
+  tag         Tag       @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@id([gameForgeId, tagId])
+  @@map("game_forge_tags")
 }

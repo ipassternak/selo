@@ -1,5 +1,6 @@
-import { Inject, Injectable, Type } from '@nestjs/common';
+import { HttpStatus, Inject, Injectable, Logger, Type } from '@nestjs/common';
 
+import { AppException } from '@lib/utils/exception';
 import { validateOrThrow } from '@lib/utils/validate';
 
 import { GenericCacheStorage } from './cache-storage/generic.storage';
@@ -26,6 +27,8 @@ export interface MakeHttpRequestOptions {
 
 @Injectable()
 export class ApiService {
+  private readonly logger = new Logger(ApiService.name);
+
   constructor(
     @Inject(API_CACHE_STORAGE_KEY)
     private readonly cacheStorage: GenericCacheStorage,
@@ -65,31 +68,51 @@ export class ApiService {
 
     url.search = encodedParams.toString();
 
-    const res = await fetch(url, {
-      method: options.method,
-      body: options.body && JSON.stringify(options.body),
-      headers: options.headers,
-      signal: AbortSignal.timeout(options.timeout ?? DEFAULT_HTTP_TIMEOUT),
-    });
-
-    let response: ResponseType = await res
-      .json()
-      .then((res: ResponseType) => res);
-
-    if (Dto) response = await validateOrThrow(Dto, response);
-
-    if (cache) {
-      const cacheKey = cache.cacheKey
-        ? this.cacheStorage.hashCacheKey(cache.cacheKey)
-        : this.cacheStorage.generateCacheKey(requestOptions);
-
-      const key = `${CACHE_KEY_PREFIX}${cacheKey}`;
-
-      await this.cacheStorage.set(key, response, {
-        ttlSec: cache.ttlSec,
+    try {
+      const res = await fetch(url, {
+        method: options.method,
+        body: options.body && JSON.stringify(options.body),
+        headers: options.headers,
+        signal: AbortSignal.timeout(options.timeout ?? DEFAULT_HTTP_TIMEOUT),
       });
-    }
 
-    return response;
+      let response: ResponseType = await res
+        .json()
+        .then((res: ResponseType) => res);
+
+      if (Dto) response = await validateOrThrow(Dto, response);
+
+      if (cache) {
+        const cacheKey = cache.cacheKey
+          ? this.cacheStorage.hashCacheKey(cache.cacheKey)
+          : this.cacheStorage.generateCacheKey(requestOptions);
+
+        const key = `${CACHE_KEY_PREFIX}${cacheKey}`;
+
+        await this.cacheStorage.set(key, response, {
+          ttlSec: cache.ttlSec,
+        });
+      }
+
+      return response;
+    } catch (error: unknown) {
+      this.logger.error({
+        message: 'Failed to make HTTP request',
+        service: `${ApiService.name}.makeHttpRequest`,
+        context: requestOptions,
+        error:
+          error instanceof Error
+            ? {
+                ...error,
+                message: error.message,
+              }
+            : error,
+      });
+
+      throw new AppException(
+        'Failed to call external resource',
+        HttpStatus.SERVICE_UNAVAILABLE,
+      );
+    }
   }
 }

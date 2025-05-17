@@ -41,7 +41,7 @@ export class RegisterDataDto {
 }
 
 export class LoginDataDto {
-  @ApiProperty({ description: 'Email' })
+  @ApiProperty({ description: 'Email or username' })
   @IsString()
   @IsNotEmpty()
   login: string;

@@ -1,12 +1,15 @@
 import { HttpStatus, Injectable, Logger } from '@nestjs/common';
-import { Prisma, Tag } from '@prisma/client';
+import { GameVersion, Prisma, Tag } from '@prisma/client';
 
 import { SuccessResponseDto } from '@lib/dto/lib.dto';
-import { GameVersionParseSourceType } from '@lib/types/game-version';
+import {
+  GameVersionParseSourceType,
+  GameVersionType,
+} from '@lib/types/game-version';
 import { AppException, createAppException } from '@lib/utils/exception';
+import { sortBy } from '@lib/utils/query';
 import { ApiService } from '@src/api/api.service';
 import { PrismaService } from '@src/database/prisma.service';
-import { TagConfig } from '@src/tag/tag.config';
 import { TagService } from '@src/tag/tag.service';
 
 import {
@@ -15,10 +18,10 @@ import {
   GameVersionResponseDto,
   ListGameVersionParamsDto,
   ParseGameVersionDataDto,
-  ParseGameVersionUrlSourceParams,
+  ParseGameVersionUrlSourceParamsDto,
   UpdateGameVersionDataDto,
 } from './dto/game-version.dto';
-import { GameVersionManifestDto } from './dto/mainfest';
+import { GameVersionManifestDto } from './dto/mainfest.dto';
 
 const AlreadyExistsException = createAppException(
   'Game version already exists',
@@ -75,15 +78,12 @@ export class GameVersionService {
         where,
         take: pageSize,
         skip: (page - 1) * pageSize,
-        orderBy: {
-          [sortColumn]: sortOrder,
-        },
+        orderBy: sortBy(sortColumn, sortOrder),
         include: {
           tags: {
             include: {
               tag: true,
             },
-            take: TagConfig.limit,
           },
         },
       }),
@@ -110,7 +110,6 @@ export class GameVersionService {
           include: {
             tag: true,
           },
-          take: TagConfig.limit,
         },
       },
     });
@@ -124,7 +123,7 @@ export class GameVersionService {
     return gameVersion;
   }
 
-  async checkUniqueVersionId(versionId: string): Promise<void> {
+  private async checkUniqueVersionId(versionId: string): Promise<void> {
     const gameVersion = await this.prismaService.gameVersion.findUnique({
       where: {
         versionId,
@@ -147,7 +146,10 @@ export class GameVersionService {
 
     await this.checkUniqueVersionId(versionId);
 
-    const tags = await this.tagService.getOrCreateTags(tagsData);
+    let tags: Tag[] | null = null;
+    if (tagsData) {
+      tags = await this.tagService.getOrCreateTags(tagsData);
+    }
 
     const gameVersion = await this.prismaService.gameVersion.create({
       data: {
@@ -155,18 +157,21 @@ export class GameVersionService {
         versionType,
         packageUrl,
         releasedAt,
-        tags: {
-          create: tags.map((tag) => ({
-            tagId: tag.id,
-          })),
-        },
+        ...(tags
+          ? {
+              tags: {
+                create: tags.map((tag) => ({
+                  tagId: tag.id,
+                })),
+              },
+            }
+          : {}),
       },
       include: {
         tags: {
           include: {
             tag: true,
           },
-          take: TagConfig.limit,
         },
       },
     });
@@ -206,7 +211,7 @@ export class GameVersionService {
                 },
                 create: tags
                   .filter((tag) =>
-                    gameVersion.tags.every(
+                    gameVersion.tags?.every(
                       (gameVersionTag) => gameVersionTag.tagId !== tag.id,
                     ),
                   )
@@ -222,7 +227,6 @@ export class GameVersionService {
           include: {
             tag: true,
           },
-          take: TagConfig.limit,
         },
       },
     });
@@ -267,7 +271,7 @@ export class GameVersionService {
         HttpStatus.NOT_IMPLEMENTED,
       );
 
-    const sourceParams = <ParseGameVersionUrlSourceParams>source.params;
+    const sourceParams = <ParseGameVersionUrlSourceParamsDto>source.params;
 
     const manifest = await this.apiService.makeHttpRequest(
       {
@@ -320,5 +324,30 @@ export class GameVersionService {
     return {
       success: true,
     };
+  }
+
+  async getRelease(idOrVersionid: string): Promise<GameVersion | null> {
+    const gameVersion = await this.prismaService.gameVersion.findFirst({
+      where: {
+        OR: [{ id: idOrVersionid }, { versionId: idOrVersionid }],
+        versionType: GameVersionType.Release,
+      },
+    });
+
+    return gameVersion;
+  }
+
+  async getRelaseOrThrow(
+    idOrVersionid: string,
+  ): Promise<GameVersionResponseDto> {
+    const gameVersion = await this.getRelease(idOrVersionid);
+
+    if (!gameVersion)
+      throw new AppException(
+        'Game version release does not exist',
+        HttpStatus.NOT_FOUND,
+      );
+
+    return gameVersion;
   }
 }

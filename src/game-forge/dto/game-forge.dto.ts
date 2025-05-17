@@ -4,7 +4,6 @@ import {
   ArrayMaxSize,
   ArrayMinSize,
   IsArray,
-  IsDate,
   IsEnum,
   IsNotEmpty,
   IsNotEmptyObject,
@@ -17,23 +16,23 @@ import {
 } from 'class-validator';
 
 import { ValidateStrategy } from '@lib/decorators/validate-strategy';
-import { ListResponseDto, PageableDto, ResponseDto } from '@lib/dto/lib.dto';
+import { ListResponseDto, PageableDto } from '@lib/dto/lib.dto';
 import {
-  GameVersionParseSourceType,
-  GameVersionParseType,
-  GameVersionSortColumn,
-  GameVersionType,
-} from '@lib/types/game-version';
+  GameForgeParseSourceType,
+  GameForgeParseType,
+  GameForgeSortColumn,
+} from '@lib/types/game-forge';
+import { GameVersionResponseDto } from '@src/game-version/dto/game-version.dto';
 import { GetOrCreateTagDataDto, TagsResponseDto } from '@src/tag/dto/tag.dto';
 import { TagConfig } from '@src/tag/tag.config';
 
-export class ListGameVersionParamsDto extends PageableDto {
+export class ListGameForgeParamsDto extends PageableDto {
   @ApiProperty({
-    enum: GameVersionSortColumn,
-    default: GameVersionSortColumn.ReleasedAt,
+    enum: GameForgeSortColumn,
+    default: GameForgeSortColumn.GameVersionReleasedAt,
   })
-  @IsEnum(GameVersionSortColumn)
-  sortColumn: GameVersionSortColumn = GameVersionSortColumn.ReleasedAt;
+  @IsEnum(GameForgeSortColumn)
+  sortColumn: GameForgeSortColumn = GameForgeSortColumn.GameVersionReleasedAt;
 
   @Transform(({ value }): string[] | undefined => {
     if (typeof value === 'string') return value.split(',');
@@ -56,33 +55,30 @@ export class ListGameVersionParamsDto extends PageableDto {
   versionId?: string;
 
   @ApiProperty({
-    enum: GameVersionType,
-    description: 'Version type',
+    description: 'Search by game record or version id',
     required: false,
   })
   @IsOptional()
-  @IsEnum(GameVersionType)
-  versionType?: GameVersionType;
+  @IsString()
+  @MinLength(3)
+  gameVersionId?: string;
 }
 
-export class CreateGameVersionDataDto {
+export class CreateGameForgeDataDto {
   @ApiProperty({ description: 'Unique version identifier' })
   @IsString()
   @Length(1, 32)
   versionId: string;
 
-  @ApiProperty({ enum: GameVersionParseType, description: 'Version type' })
-  @IsEnum(GameVersionParseType)
-  versionType: GameVersionParseType;
+  @ApiProperty({ description: 'Game version record or version id' })
+  @IsString()
+  @IsNotEmpty()
+  gameVersionId: string;
 
-  @ApiProperty({ description: 'Version package url' })
+  @ApiProperty({ description: 'Forge package url' })
   @IsString()
   @MaxLength(255)
   packageUrl: string;
-
-  @ApiProperty({ description: 'Version release date' })
-  @IsDate()
-  releasedAt: Date;
 
   @ApiProperty({ type: [GetOrCreateTagDataDto], required: false })
   @IsOptional()
@@ -94,7 +90,7 @@ export class CreateGameVersionDataDto {
   tags?: [];
 }
 
-export class UpdateGameVersionDataDto {
+export class UpdateGameForgeDataDto {
   @IsOptional()
   @ApiProperty({ description: 'Unique version identifier', required: false })
   @IsString()
@@ -102,15 +98,10 @@ export class UpdateGameVersionDataDto {
   versionId?: string;
 
   @IsOptional()
-  @ApiProperty({ description: 'Version package url', required: false })
+  @ApiProperty({ description: 'Forge package url', required: false })
   @IsString()
   @MaxLength(255)
   packageUrl?: string;
-
-  @IsOptional()
-  @ApiProperty({ description: 'Version release date', required: false })
-  @IsDate()
-  releasedAt?: Date;
 
   @IsOptional()
   @ApiProperty({ type: [GetOrCreateTagDataDto], required: false })
@@ -122,45 +113,49 @@ export class UpdateGameVersionDataDto {
   tags?: GetOrCreateTagDataDto[];
 }
 
-export class ParseGameVersionUrlSourceParamsDto {
+export class ParseGameForgeUrlSourceParamsDto {
   @IsString()
   @MaxLength(255)
   url: string;
+
+  @IsString()
+  @MaxLength(255)
+  packageBaseUrl: string;
 }
 
-export class ParseGameVersionFileSourceParamsDto {
+export class ParseGameForgeFileSourceParamsDto {
   @IsString()
   @IsNotEmpty()
   fileId: string;
 }
 
-class ParseGameVersionSourceDataDto {
-  @ApiProperty({ enum: GameVersionParseSourceType, description: 'Source type' })
-  @IsEnum(GameVersionParseSourceType)
-  type: GameVersionParseSourceType;
+class ParseGameForgeSourceDataDto {
+  @ApiProperty({ enum: GameForgeParseSourceType, description: 'Source type' })
+  @IsEnum(GameForgeParseSourceType)
+  type: GameForgeParseSourceType;
 
   @ApiProperty({ description: 'Params of the source', type: Object })
-  @ValidateStrategy<{ type: GameVersionParseSourceType }>(({ type }) => {
+  @ValidateStrategy<{ type: GameForgeParseSourceType }>(({ type }) => {
     switch (type) {
-      case GameVersionParseSourceType.Url:
-        return ParseGameVersionUrlSourceParamsDto;
-      case GameVersionParseSourceType.File:
-        return ParseGameVersionFileSourceParamsDto;
+      case GameForgeParseSourceType.Url:
+        return ParseGameForgeUrlSourceParamsDto;
+      case GameForgeParseSourceType.File:
+        return ParseGameForgeFileSourceParamsDto;
     }
   })
   params: unknown;
 }
 
-export class ParseGameVersionDataDto {
-  @ApiProperty({ enum: GameVersionParseType, description: 'Parse type' })
-  @IsEnum(GameVersionParseType)
-  type: GameVersionParseType;
+export class ParseGameForgeDataDto {
+  @ApiProperty({ enum: GameForgeParseType, description: 'Parse type' })
+  @IsEnum(GameForgeParseType)
+  type: GameForgeParseType;
 
   @IsOptional()
   @ApiProperty({
     type: [GetOrCreateTagDataDto],
     required: false,
-    description: 'Tags to apply to new versions',
+    description: 'Tags to apply to new forges',
   })
   @IsArray()
   @ArrayMaxSize(8)
@@ -168,25 +163,29 @@ export class ParseGameVersionDataDto {
   @Type(() => GetOrCreateTagDataDto)
   tags?: GetOrCreateTagDataDto[];
 
-  @ApiProperty({ type: ParseGameVersionSourceDataDto })
+  @ApiProperty({ type: ParseGameForgeSourceDataDto })
   @IsNotEmptyObject()
   @ValidateNested()
-  @Type(() => ParseGameVersionSourceDataDto)
-  source: ParseGameVersionSourceDataDto;
+  @Type(() => ParseGameForgeSourceDataDto)
+  source: ParseGameForgeSourceDataDto;
 }
 
-export class GameVersionResponseDto extends ResponseDto {
+export class GameForgeResponseDto {
   @ApiProperty({ description: 'Record id' })
   id: string;
 
   @ApiProperty({ description: 'Original version id' })
   versionId: string;
 
+  @Exclude()
+  gameVersionId: string;
+
+  @ApiProperty({ type: GameVersionResponseDto })
+  @Type(() => GameVersionResponseDto)
+  gameVersion: GameVersionResponseDto;
+
   @ApiProperty({ description: 'Package url' })
   packageUrl: string;
-
-  @ApiProperty({ description: 'Release date' })
-  releasedAt: Date;
 
   @ApiProperty({ description: 'Create date' })
   createdAt: Date;
@@ -195,7 +194,7 @@ export class GameVersionResponseDto extends ResponseDto {
   updatedAt: Date;
 
   @ApiProperty({
-    description: 'Version tags',
+    description: 'Forge tags',
     type: [TagsResponseDto],
     required: false,
   })
@@ -204,8 +203,8 @@ export class GameVersionResponseDto extends ResponseDto {
 }
 
 // eslint-disable-next-line max-len
-export class GameVersionListResponseDto extends ListResponseDto<GameVersionResponseDto> {
-  @ApiProperty({ type: [GameVersionResponseDto] })
-  @Type(() => GameVersionResponseDto)
-  data: GameVersionResponseDto[];
+export class GameForgeListResponseDto extends ListResponseDto<GameForgeResponseDto> {
+  @ApiProperty({ type: [GameForgeResponseDto] })
+  @Type(() => GameForgeResponseDto)
+  data: GameForgeResponseDto[];
 }
