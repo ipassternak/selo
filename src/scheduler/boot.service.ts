@@ -11,10 +11,8 @@ import {
   GameVersionParseType,
 } from '@lib/types/game-version';
 import { AuthService } from '@src/auth/auth.service';
-// eslint-disable-next-line max-len
 import { ParseGameForgeUrlSourceParamsDto } from '@src/game-forge/dto/game-forge.dto';
 import { GameForgeService } from '@src/game-forge/game-forge.service';
-// eslint-disable-next-line max-len
 import { ParseGameVersionUrlSourceParamsDto } from '@src/game-version/dto/game-version.dto';
 import { GameVersionService } from '@src/game-version/game-version.service';
 

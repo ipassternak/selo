@@ -202,7 +202,6 @@ export class GameForgeResponseDto {
   tags?: TagsResponseDto[];
 }
 
-// eslint-disable-next-line max-len
 export class GameForgeListResponseDto extends ListResponseDto<GameForgeResponseDto> {
   @ApiProperty({ type: [GameForgeResponseDto] })
   @Type(() => GameForgeResponseDto)

@@ -203,7 +203,6 @@ export class GameVersionResponseDto extends ResponseDto {
   tags?: TagsResponseDto[];
 }
 
-// eslint-disable-next-line max-len
 export class GameVersionListResponseDto extends ListResponseDto<GameVersionResponseDto> {
   @ApiProperty({ type: [GameVersionResponseDto] })
   @Type(() => GameVersionResponseDto)

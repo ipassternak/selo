@@ -190,6 +190,7 @@ export default tseslint.config(
           ignoreUrls: true,
           ignoreTemplateLiterals: true,
           ignoreRegExpLiterals: true,
+          ignorePattern: '^(import|export)'
         },
       ],
       'max-nested-callbacks': [

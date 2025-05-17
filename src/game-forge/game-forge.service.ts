@@ -2,7 +2,7 @@ import { HttpStatus, Injectable, Logger } from '@nestjs/common';
 import { Prisma, Tag } from '@prisma/client';
 
 import { SuccessResponseDto } from '@lib/dto/lib.dto';
-import { GameForgeParseSourceType } from '@lib/types/game-forge';
+import { GameForgeParseType } from '@lib/types/game-forge';
 import { AppException, createAppException } from '@lib/utils/exception';
 import { sortBy } from '@lib/utils/query';
 import { ApiService } from '@src/api/api.service';
@@ -16,10 +16,10 @@ import {
   GameForgeResponseDto,
   ListGameForgeParamsDto,
   ParseGameForgeDataDto,
-  ParseGameForgeUrlSourceParamsDto,
   UpdateGameForgeDataDto,
 } from './dto/game-forge.dto';
-import { GameForgePromotionsDto } from './dto/promotions.dto';
+import { GameForgeBaseParser } from './parsers/base.parser';
+import { GameForgePromotionsParser } from './parsers/promotions.parser';
 
 const AlreadyExistsException = createAppException(
   'Game forge already exists',
@@ -30,6 +30,12 @@ const AlreadyExistsException = createAppException(
 @Injectable()
 export class GameForgeService {
   private readonly logger = new Logger(GameForgeService.name);
+
+  private readonly parsers: Record<GameForgeParseType, GameForgeBaseParser> = {
+    [GameForgeParseType.Promotions]: new GameForgePromotionsParser(
+      this.apiService,
+    ),
+  };
 
   constructor(
     private readonly prismaService: PrismaService,
@@ -260,60 +266,41 @@ export class GameForgeService {
   }
 
   async parse(data: ParseGameForgeDataDto): Promise<SuccessResponseDto> {
-    const { tags: tagsData, source } = data;
+    const { tags: tagsData, source, type } = data;
+
+    const parser = this.parsers[type];
+
+    const versions = await parser.use(source.type, source.params);
 
     let tags: Tag[] | null = null;
     if (tagsData) {
       tags = await this.tagService.getOrCreateTags(tagsData);
     }
 
-    if (source.type !== GameForgeParseSourceType.Url)
-      throw new AppException(
-        'Unsupported source type',
-        HttpStatus.NOT_IMPLEMENTED,
-      );
-
-    const sourceParams = <ParseGameForgeUrlSourceParamsDto>source.params;
-
-    const promotions = await this.apiService.makeHttpRequest(
-      {
-        url: sourceParams.url,
-        cache: {
-          ttlSec: 30,
-          cacheKey: sourceParams.url,
-        },
-      },
-      GameForgePromotionsDto,
-    );
-
-    const versions = Object.entries(promotions.promos);
-
     this.logger.debug({
       message: 'Parsed game forge promotions',
-      urL: sourceParams.url,
+      params: source.params,
       versions: {
         count: versions.length,
         head: versions.slice(0, 10),
       },
     });
 
-    for (const [promotionId, versionId] of versions) {
-      const gameVersionId = promotionId.replace(/[^.0-9]/g, '');
-      const gameVersion =
-        await this.gameVersionService.getRelease(gameVersionId);
+    for (const version of versions) {
+      const gameVersion = await this.gameVersionService.getRelease(
+        version.gameVersionId,
+      );
 
       if (!gameVersion) continue;
 
-      const packageUrl = `${sourceParams.packageBaseUrl}/${gameVersionId}-${versionId}/forge-${gameVersionId}-${versionId}-installer.jar`;
-
       await this.prismaService.gameForge.upsert({
         where: {
-          versionId,
+          versionId: version.versionId,
         },
         create: {
-          versionId,
+          versionId: version.versionId,
           gameVersionId: gameVersion.id,
-          packageUrl,
+          packageUrl: version.packageUrl,
           ...(tags
             ? {
                 tags: {
@@ -325,7 +312,7 @@ export class GameForgeService {
             : {}),
         },
         update: {
-          packageUrl,
+          packageUrl: version.packageUrl,
         },
       });
     }

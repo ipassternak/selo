@@ -2,10 +2,7 @@ import { HttpStatus, Injectable, Logger } from '@nestjs/common';
 import { GameVersion, Prisma, Tag } from '@prisma/client';
 
 import { SuccessResponseDto } from '@lib/dto/lib.dto';
-import {
-  GameVersionParseSourceType,
-  GameVersionType,
-} from '@lib/types/game-version';
+import { GameVersionParseType, GameVersionType } from '@lib/types/game-version';
 import { AppException, createAppException } from '@lib/utils/exception';
 import { sortBy } from '@lib/utils/query';
 import { ApiService } from '@src/api/api.service';
@@ -18,10 +15,10 @@ import {
   GameVersionResponseDto,
   ListGameVersionParamsDto,
   ParseGameVersionDataDto,
-  ParseGameVersionUrlSourceParamsDto,
   UpdateGameVersionDataDto,
 } from './dto/game-version.dto';
-import { GameVersionManifestDto } from './dto/mainfest.dto';
+import { GameVersionBaseParser } from './parsers/base.parser';
+import { GameVersionManifestParser } from './parsers/manifest.parser';
 
 const AlreadyExistsException = createAppException(
   'Game version already exists',
@@ -32,6 +29,15 @@ const AlreadyExistsException = createAppException(
 @Injectable()
 export class GameVersionService {
   private readonly logger = new Logger(GameVersionService.name);
+
+  private readonly parsers: Record<
+    GameVersionParseType,
+    GameVersionBaseParser
+  > = {
+    [GameVersionParseType.Manifest]: new GameVersionManifestParser(
+      this.apiService,
+    ),
+  };
 
   constructor(
     private readonly prismaService: PrismaService,
@@ -258,52 +264,27 @@ export class GameVersionService {
   }
 
   async parse(data: ParseGameVersionDataDto): Promise<SuccessResponseDto> {
-    const { tags: tagsData, source } = data;
+    const { tags: tagsData, source, type } = data;
+
+    const parser = this.parsers[type];
+
+    const versions = await parser.use(source.type, source.params);
 
     let tags: Tag[] | null = null;
     if (tagsData) {
       tags = await this.tagService.getOrCreateTags(tagsData);
     }
 
-    if (source.type !== GameVersionParseSourceType.Url)
-      throw new AppException(
-        'Unsupported source type',
-        HttpStatus.NOT_IMPLEMENTED,
-      );
-
-    const sourceParams = <ParseGameVersionUrlSourceParamsDto>source.params;
-
-    const manifest = await this.apiService.makeHttpRequest(
-      {
-        url: sourceParams.url,
-        cache: {
-          ttlSec: 30,
-          cacheKey: sourceParams.url,
-        },
-      },
-      GameVersionManifestDto,
-    );
-
-    this.logger.debug({
-      message: 'Parsed game version manifest',
-      urL: sourceParams.url,
-      leatest: manifest.latest,
-      versions: {
-        count: manifest.versions.length,
-        head: manifest.versions.slice(0, 10),
-      },
-    });
-
-    for (const version of manifest.versions) {
+    for (const version of versions) {
       await this.prismaService.gameVersion.upsert({
         where: {
-          versionId: version.id,
+          versionId: version.versionId,
         },
         create: {
-          versionId: version.id,
+          versionId: version.versionId,
           versionType: version.type,
-          packageUrl: version.url,
-          releasedAt: version.releaseTime,
+          packageUrl: version.packageUrl,
+          releasedAt: version.releasedAt,
           ...(tags
             ? {
                 tags: {
@@ -315,8 +296,8 @@ export class GameVersionService {
             : {}),
         },
         update: {
-          packageUrl: version.url,
-          releasedAt: version.releaseTime,
+          packageUrl: version.packageUrl,
+          releasedAt: version.releasedAt,
         },
       });
     }
