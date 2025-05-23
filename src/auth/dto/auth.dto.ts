@@ -1,4 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
+import { Type } from 'class-transformer';
 import {
   IsEmail,
   IsNotEmpty,
@@ -8,13 +9,8 @@ import {
   MinLength,
 } from 'class-validator';
 
-export class TokenResponseDto {
-  @ApiProperty({ description: 'Access token' })
-  accessToken: string;
-
-  @ApiProperty({ description: 'Refresh token' })
-  refreshToken: string;
-}
+import { ResponseDto } from '@lib/dto/lib.dto';
+import { UserResponseDto } from '@src/user/dto/user.dto';
 
 export class RegisterDataDto {
   @ApiProperty({ description: 'Username', minLength: 3, maxLength: 32 })
@@ -50,4 +46,22 @@ export class LoginDataDto {
   @IsString()
   @IsNotEmpty()
   password: string;
+}
+
+export class TokenResponseDto extends ResponseDto {
+  @ApiProperty({ description: 'Access token' })
+  accessToken: string;
+
+  @ApiProperty({ description: 'Refresh token' })
+  refreshToken: string;
+}
+
+export class AuthResponseDto extends ResponseDto {
+  @ApiProperty({ type: TokenResponseDto })
+  @Type(() => TokenResponseDto)
+  tokens: TokenResponseDto;
+
+  @ApiProperty({ type: UserResponseDto })
+  @Type(() => UserResponseDto)
+  user: UserResponseDto;
 }

@@ -31,6 +31,7 @@ import { UserResponseDto } from '@src/user/dto/user.dto';
 
 import { AuthService } from './auth.service';
 import {
+  AuthResponseDto,
   LoginDataDto,
   RegisterDataDto,
   TokenResponseDto,
@@ -42,6 +43,7 @@ import { OAuthGoogleGuard } from './guards/oauth-google.guard';
 
 @Controller('/api/auth')
 @ApiTags('Auth')
+@UseInterceptors(ClassSerializerInterceptor)
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
@@ -58,7 +60,6 @@ export class AuthController {
   }
 
   @UseGuards(JwtAccessGuard)
-  @UseInterceptors(ClassSerializerInterceptor)
   @SerializeOptions({ type: UserResponseDto })
   @Get('/me')
   @ApiBearerAuth()
@@ -84,17 +85,19 @@ export class AuthController {
   }
 
   @Post('/register')
-  @ApiCreatedResponse({ type: TokenResponseDto })
+  @ApiCreatedResponse({ type: AuthResponseDto })
+  @SerializeOptions({ type: AuthResponseDto })
   @ApiOperation({ description: 'Register new user' })
-  async register(@Body() data: RegisterDataDto): Promise<TokenResponseDto> {
+  async register(@Body() data: RegisterDataDto): Promise<AuthResponseDto> {
     return await this.authService.register(data);
   }
 
   @Post('/login')
   @HttpCode(200)
-  @ApiOkResponse({ type: TokenResponseDto })
+  @ApiOkResponse({ type: AuthResponseDto })
+  @SerializeOptions({ type: AuthResponseDto })
   @ApiOperation({ description: 'Log in user' })
-  async login(@Body() data: LoginDataDto): Promise<TokenResponseDto> {
+  async login(@Body() data: LoginDataDto): Promise<AuthResponseDto> {
     return await this.authService.login(data);
   }
 

@@ -22,6 +22,7 @@ import { UserResponseDto } from '@src/user/dto/user.dto';
 import { UserService } from '@src/user/user.service';
 
 import {
+  AuthResponseDto,
   LoginDataDto,
   RegisterDataDto,
   TokenResponseDto,
@@ -202,7 +203,7 @@ export class AuthService {
     await this.revokeSession(session);
   }
 
-  async register(data: RegisterDataDto): Promise<TokenResponseDto> {
+  async register(data: RegisterDataDto): Promise<AuthResponseDto> {
     const { email, username, password } = data;
     const existingUser = await this.userService.checkUnique({
       email,
@@ -227,20 +228,42 @@ export class AuthService {
           ],
         },
       },
+      include: {
+        roles: {
+          include: {
+            role: true,
+          },
+        },
+      },
     });
-    return await this.initSession(user);
+    const tokens = await this.initSession(user);
+    return {
+      tokens,
+      user,
+    };
   }
 
-  async login(data: LoginDataDto): Promise<TokenResponseDto> {
+  async login(data: LoginDataDto): Promise<AuthResponseDto> {
     const { login, password } = data;
     const user = await this.prismaService.user.findFirst({
       where: {
         OR: [{ email: login }, { username: login }],
       },
+      include: {
+        roles: {
+          include: {
+            role: true,
+          },
+        },
+      },
     });
     if (!user || !(await validatePassword(password, user.password)))
       throw new InvalidCredentialsException();
-    return await this.initSession(user);
+    const tokens = await this.initSession(user);
+    return {
+      tokens,
+      user,
+    };
   }
 
   private async loginOauth({
